@@ -1,4 +1,4 @@
-// Enhanced API utilities with dynamic data simulation
+// Enhanced API utilities with dynamic data simulation and proactive alerting
 export interface KPIData {
   title: string;
   value: string;
@@ -34,6 +34,19 @@ export interface RiskData {
   description: string;
 }
 
+export interface Alert {
+  id: string;
+  type: 'info' | 'warning' | 'critical' | 'success';
+  title: string;
+  message: string;
+  timestamp: number;
+  source: 'KPI' | 'Risk' | 'Budget' | 'CashFlow' | 'System';
+  priority: 'high' | 'medium' | 'low';
+  actionRequired: boolean;
+  threshold?: number;
+  currentValue?: number;
+}
+
 export interface SimulationConfig {
   baseRevenue: number;
   growthRate: number;
@@ -51,16 +64,263 @@ let currentConfig: SimulationConfig = {
   competitionImpact: 8
 };
 
+// Alert management
+let _currentAlerts: Alert[] = [];
+let _alertIdCounter = 0;
+
+// Alert thresholds configuration
+const ALERT_THRESHOLDS = {
+  PROFIT_MARGIN_CRITICAL: 5,
+  PROFIT_MARGIN_WARNING: 10,
+  BUDGET_VARIANCE_WARNING: 15,
+  BUDGET_VARIANCE_CRITICAL: 25,
+  RISK_SCORE_WARNING: 60,
+  RISK_SCORE_CRITICAL: 80,
+  CASH_FLOW_WARNING: 50000,
+  CASH_FLOW_CRITICAL: 25000,
+  REVENUE_DECLINE_WARNING: -5,
+  REVENUE_DECLINE_CRITICAL: -15,
+  MARKET_VOLATILITY_WARNING: 20,
+  MARKET_VOLATILITY_CRITICAL: 30
+};
+
 export const updateSimulationConfig = (config: Partial<SimulationConfig>) => {
   currentConfig = { ...currentConfig, ...config };
 };
 
 export const getSimulationConfig = (): SimulationConfig => currentConfig;
 
+// Alert management functions
+export const getAlerts = (): Alert[] => [..._currentAlerts];
+
+export const clearAlert = (id: string): void => {
+  _currentAlerts = _currentAlerts.filter(alert => alert.id !== id);
+};
+
+export const clearAllAlerts = (): void => {
+  _currentAlerts = [];
+};
+
+export const getAlertCount = (): number => _currentAlerts.length;
+
+export const getCriticalAlertCount = (): number => 
+  _currentAlerts.filter(alert => alert.type === 'critical').length;
+
+// Helper function to generate unique alert IDs
+const generateAlertId = (): string => {
+  return `alert_${++_alertIdCounter}_${Date.now()}`;
+};
+
+// Helper function to add alerts
+const addAlert = (alert: Omit<Alert, 'id' | 'timestamp'>): void => {
+  // Check if similar alert already exists to avoid duplicates
+  const existingAlert = _currentAlerts.find(existing => 
+    existing.source === alert.source && 
+    existing.title === alert.title &&
+    existing.type === alert.type
+  );
+  
+  if (!existingAlert) {
+    _currentAlerts.push({
+      ...alert,
+      id: generateAlertId(),
+      timestamp: Date.now()
+    });
+  }
+};
+
+// Alert generation logic for KPI data
+const generateKPIAlerts = (kpis: KPIData[]): void => {
+  kpis.forEach(kpi => {
+    switch (kpi.title) {
+      case 'Net Profit Margin':
+        const profitMargin = kpi.rawValue;
+        if (profitMargin < ALERT_THRESHOLDS.PROFIT_MARGIN_CRITICAL) {
+          addAlert({
+            type: 'critical',
+            title: 'Critical Profit Margin Alert',
+            message: `Profit margin has dropped to ${profitMargin.toFixed(1)}%, below critical threshold of ${ALERT_THRESHOLDS.PROFIT_MARGIN_CRITICAL}%`,
+            source: 'KPI',
+            priority: 'high',
+            actionRequired: true,
+            threshold: ALERT_THRESHOLDS.PROFIT_MARGIN_CRITICAL,
+            currentValue: profitMargin
+          });
+        } else if (profitMargin < ALERT_THRESHOLDS.PROFIT_MARGIN_WARNING) {
+          addAlert({
+            type: 'warning',
+            title: 'Low Profit Margin Warning',
+            message: `Profit margin at ${profitMargin.toFixed(1)}% is below recommended threshold of ${ALERT_THRESHOLDS.PROFIT_MARGIN_WARNING}%`,
+            source: 'KPI',
+            priority: 'medium',
+            actionRequired: true,
+            threshold: ALERT_THRESHOLDS.PROFIT_MARGIN_WARNING,
+            currentValue: profitMargin
+          });
+        }
+        break;
+
+      case 'Monthly Revenue':
+        const revenueChange = parseFloat(kpi.change.replace('%', ''));
+        if (revenueChange < ALERT_THRESHOLDS.REVENUE_DECLINE_CRITICAL) {
+          addAlert({
+            type: 'critical',
+            title: 'Severe Revenue Decline',
+            message: `Revenue has declined by ${Math.abs(revenueChange).toFixed(1)}%, indicating serious market challenges`,
+            source: 'KPI',
+            priority: 'high',
+            actionRequired: true,
+            threshold: ALERT_THRESHOLDS.REVENUE_DECLINE_CRITICAL,
+            currentValue: revenueChange
+          });
+        } else if (revenueChange < ALERT_THRESHOLDS.REVENUE_DECLINE_WARNING) {
+          addAlert({
+            type: 'warning',
+            title: 'Revenue Decline Alert',
+            message: `Revenue has declined by ${Math.abs(revenueChange).toFixed(1)}%, monitor market conditions closely`,
+            source: 'KPI',
+            priority: 'medium',
+            actionRequired: true,
+            threshold: ALERT_THRESHOLDS.REVENUE_DECLINE_WARNING,
+            currentValue: revenueChange
+          });
+        }
+        break;
+
+      case 'Cash Flow':
+        const cashFlow = kpi.rawValue;
+        if (cashFlow < ALERT_THRESHOLDS.CASH_FLOW_CRITICAL) {
+          addAlert({
+            type: 'critical',
+            title: 'Critical Cash Flow Alert',
+            message: `Cash flow at $${(cashFlow / 1000).toFixed(0)}K is critically low, immediate action required`,
+            source: 'CashFlow',
+            priority: 'high',
+            actionRequired: true,
+            threshold: ALERT_THRESHOLDS.CASH_FLOW_CRITICAL,
+            currentValue: cashFlow
+          });
+        } else if (cashFlow < ALERT_THRESHOLDS.CASH_FLOW_WARNING) {
+          addAlert({
+            type: 'warning',
+            title: 'Low Cash Flow Warning',
+            message: `Cash flow at $${(cashFlow / 1000).toFixed(0)}K is below recommended levels`,
+            source: 'CashFlow',
+            priority: 'medium',
+            actionRequired: true,
+            threshold: ALERT_THRESHOLDS.CASH_FLOW_WARNING,
+            currentValue: cashFlow
+          });
+        }
+        break;
+    }
+  });
+};
+
+// Alert generation logic for budget data
+const generateBudgetAlerts = (budgets: BudgetData[]): void => {
+  budgets.forEach(budget => {
+    const absVariance = Math.abs(budget.variance);
+    
+    if (absVariance > ALERT_THRESHOLDS.BUDGET_VARIANCE_CRITICAL) {
+      addAlert({
+        type: 'critical',
+        title: `Critical Budget Variance - ${budget.category}`,
+        message: `${budget.category} is ${budget.variance > 0 ? 'over' : 'under'} budget by ${absVariance.toFixed(1)}%`,
+        source: 'Budget',
+        priority: 'high',
+        actionRequired: true,
+        threshold: ALERT_THRESHOLDS.BUDGET_VARIANCE_CRITICAL,
+        currentValue: absVariance
+      });
+    } else if (absVariance > ALERT_THRESHOLDS.BUDGET_VARIANCE_WARNING) {
+      addAlert({
+        type: 'warning',
+        title: `Budget Variance Alert - ${budget.category}`,
+        message: `${budget.category} is ${budget.variance > 0 ? 'over' : 'under'} budget by ${absVariance.toFixed(1)}%`,
+        source: 'Budget',
+        priority: 'medium',
+        actionRequired: false,
+        threshold: ALERT_THRESHOLDS.BUDGET_VARIANCE_WARNING,
+        currentValue: absVariance
+      });
+    }
+  });
+};
+
+// Alert generation logic for risk data
+const generateRiskAlerts = (risks: RiskData[]): void => {
+  risks.forEach(risk => {
+    if (risk.score >= ALERT_THRESHOLDS.RISK_SCORE_CRITICAL) {
+      addAlert({
+        type: 'critical',
+        title: `Critical Risk Level - ${risk.category}`,
+        message: `${risk.category} risk score is ${risk.score}/100, requiring immediate attention`,
+        source: 'Risk',
+        priority: 'high',
+        actionRequired: true,
+        threshold: ALERT_THRESHOLDS.RISK_SCORE_CRITICAL,
+        currentValue: risk.score
+      });
+    } else if (risk.score >= ALERT_THRESHOLDS.RISK_SCORE_WARNING) {
+      addAlert({
+        type: 'warning',
+        title: `Elevated Risk Level - ${risk.category}`,
+        message: `${risk.category} risk score is ${risk.score}/100, monitor closely`,
+        source: 'Risk',
+        priority: 'medium',
+        actionRequired: false,
+        threshold: ALERT_THRESHOLDS.RISK_SCORE_WARNING,
+        currentValue: risk.score
+      });
+    }
+  });
+};
+
+// Alert generation for system/configuration issues
+const generateSystemAlerts = (): void => {
+  if (currentConfig.marketVolatility >= ALERT_THRESHOLDS.MARKET_VOLATILITY_CRITICAL) {
+    addAlert({
+      type: 'critical',
+      title: 'Extreme Market Volatility',
+      message: `Market volatility at ${currentConfig.marketVolatility}% is extremely high, forecasts may be unreliable`,
+      source: 'System',
+      priority: 'high',
+      actionRequired: true,
+      threshold: ALERT_THRESHOLDS.MARKET_VOLATILITY_CRITICAL,
+      currentValue: currentConfig.marketVolatility
+    });
+  } else if (currentConfig.marketVolatility >= ALERT_THRESHOLDS.MARKET_VOLATILITY_WARNING) {
+    addAlert({
+      type: 'warning',
+      title: 'High Market Volatility',
+      message: `Market volatility at ${currentConfig.marketVolatility}% is elevated, exercise caution in planning`,
+      source: 'System',
+      priority: 'medium',
+      actionRequired: false,
+      threshold: ALERT_THRESHOLDS.MARKET_VOLATILITY_WARNING,
+      currentValue: currentConfig.marketVolatility
+    });
+  }
+
+  if (currentConfig.competitionImpact > 15) {
+    addAlert({
+      type: 'warning',
+      title: 'High Competitive Pressure',
+      message: `Competition impact at ${currentConfig.competitionImpact}% suggests significant market pressure`,
+      source: 'System',
+      priority: 'medium',
+      actionRequired: true,
+      threshold: 15,
+      currentValue: currentConfig.competitionImpact
+    });
+  }
+};
+
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Enhanced data generators with dynamic simulation
+// Enhanced data generators with dynamic simulation and alert generation
 export const fetchKPIData = async (config?: Partial<SimulationConfig>): Promise<KPIData[]> => {
   await delay(800);
   
@@ -89,7 +349,7 @@ export const fetchKPIData = async (config?: Partial<SimulationConfig>): Promise<
   const workingCapitalChange = (Math.random() - 0.5) * 0.2;
   const cashFlow = profit * (1 + workingCapitalChange);
   
-  return [
+  const kpiData = [
     {
       title: 'Monthly Revenue',
       value: `$${(revenue / 1000000).toFixed(1)}M`,
@@ -118,7 +378,12 @@ export const fetchKPIData = async (config?: Partial<SimulationConfig>): Promise<
       trend: workingCapitalChange > 0 ? 'up' : 'down',
       rawValue: cashFlow
     }
-  ];
+  ] as KPIData[];
+
+  // Generate alerts based on KPI data
+  generateKPIAlerts(kpiData);
+  
+  return kpiData;
 };
 
 export const fetchCashFlowData = async (config?: Partial<SimulationConfig>): Promise<CashFlowData[]> => {
@@ -155,7 +420,7 @@ export const fetchBudgetData = async (config?: Partial<SimulationConfig>): Promi
     { name: 'Admin', baseSpent: 120000, baseBudget: 125000 }
   ];
   
-  return categories.map(cat => {
+  const budgetData = categories.map(cat => {
     const spentVariation = (Math.random() - 0.5) * volatility;
     const spent = cat.baseSpent * (1 + spentVariation);
     const variance = ((spent - cat.baseBudget) / cat.baseBudget) * 100;
@@ -167,6 +432,11 @@ export const fetchBudgetData = async (config?: Partial<SimulationConfig>): Promi
       variance: Number(variance.toFixed(1))
     };
   });
+
+  // Generate alerts based on budget data
+  generateBudgetAlerts(budgetData);
+  
+  return budgetData;
 };
 
 export const fetchInsightsData = async (config?: Partial<SimulationConfig>): Promise<InsightData[]> => {
@@ -235,7 +505,7 @@ export const fetchRiskData = async (config?: Partial<SimulationConfig>): Promise
     return 'Low';
   };
   
-  return [
+  const riskData = [
     {
       category: 'Market Risk',
       level: getRiskLevel(marketRiskScore),
@@ -255,4 +525,29 @@ export const fetchRiskData = async (config?: Partial<SimulationConfig>): Promise
       description: `Competition impact of ${activeConfig.competitionImpact}% affects operational stability`
     }
   ];
+
+  // Generate alerts based on risk data
+  generateRiskAlerts(riskData);
+  
+  return riskData;
+};
+
+// Function to refresh all alerts (called when data is refreshed)
+export const refreshAlerts = async (): Promise<void> => {
+  // Clear existing alerts
+  _currentAlerts = [];
+  
+  // Generate system alerts
+  generateSystemAlerts();
+  
+  // Fetch fresh data and generate alerts
+  try {
+    await Promise.all([
+      fetchKPIData(),
+      fetchBudgetData(),
+      fetchRiskData()
+    ]);
+  } catch (error) {
+    console.error('Error refreshing alerts:', error);
+  }
 };

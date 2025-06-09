@@ -1,7 +1,17 @@
 import React from 'react';
 import { Brain, Bell, Settings, User } from 'lucide-react';
 
-const Header = () => {
+interface HeaderProps {
+  alertCount?: number;
+  criticalAlertCount?: number;
+  onAlertsClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ 
+  alertCount = 0, 
+  criticalAlertCount = 0, 
+  onAlertsClick 
+}) => {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -17,8 +27,23 @@ const Header = () => {
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+          <button 
+            onClick={onAlertsClick}
+            className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             <Bell className="w-5 h-5" />
+            {alertCount > 0 && (
+              <div className="absolute -top-1 -right-1 flex items-center justify-center">
+                <div className={`w-5 h-5 rounded-full text-xs font-bold text-white flex items-center justify-center ${
+                  criticalAlertCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500'
+                }`}>
+                  {alertCount > 9 ? '9+' : alertCount}
+                </div>
+              </div>
+            )}
+            {criticalAlertCount > 0 && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+            )}
           </button>
           <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
             <Settings className="w-5 h-5" />
