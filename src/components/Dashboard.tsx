@@ -3,7 +3,11 @@ import { TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3, AlertTriangl
 import { fetchKPIData, KPIData } from '../utils/api';
 import LoadingSpinner from './LoadingSpinner';
 
-const Dashboard = () => {
+interface DashboardProps {
+  onKpiClick?: (kpi: KPIData) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onKpiClick }) => {
   const [kpis, setKpis] = useState<KPIData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,9 +78,13 @@ const Dashboard = () => {
         const colorClass = colorMap[kpi.title as keyof typeof colorMap] || 'text-gray-600';
         
         return (
-          <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 transform hover:scale-105">
+          <button
+            key={index}
+            onClick={() => onKpiClick?.(kpi)}
+            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 transform hover:scale-105 cursor-pointer text-left w-full group"
+          >
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-lg bg-gray-50 ${colorClass}`}>
+              <div className={`p-3 rounded-lg bg-gray-50 ${colorClass} group-hover:bg-opacity-80 transition-colors`}>
                 <IconComponent className="w-6 h-6" />
               </div>
               <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-sm font-medium ${
@@ -88,7 +96,10 @@ const Dashboard = () => {
             </div>
             <h3 className="text-sm font-medium text-gray-600 mb-1">{kpi.title}</h3>
             <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
-          </div>
+            <div className="mt-2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+              Click for detailed analysis →
+            </div>
+          </button>
         );
       })}
     </div>

@@ -9,12 +9,15 @@ import QuickActions from './components/QuickActions';
 import ScenarioAnalysis from './components/ScenarioAnalysis';
 import SimulationControls from './components/SimulationControls';
 import AlertsDisplay from './components/AlertsDisplay';
-import { getAlerts, clearAlert, clearAllAlerts, refreshAlerts, getAlertCount, getCriticalAlertCount } from './utils/api';
+import KPIDetailModal from './components/KPIDetailModal';
+import { getAlerts, clearAlert, clearAllAlerts, refreshAlerts, getAlertCount, getCriticalAlertCount, KPIData } from './utils/api';
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [alerts, setAlerts] = useState(getAlerts());
   const [showAlerts, setShowAlerts] = useState(false);
+  const [selectedKpi, setSelectedKpi] = useState<KPIData | null>(null);
+  const [isKpiModalVisible, setIsKpiModalVisible] = useState(false);
 
   const handleConfigChange = useCallback(async () => {
     setRefreshKey(prev => prev + 1);
@@ -36,6 +39,16 @@ function App() {
 
   const handleToggleAlerts = useCallback(() => {
     setShowAlerts(prev => !prev);
+  }, []);
+
+  const handleKpiClick = useCallback((kpi: KPIData) => {
+    setSelectedKpi(kpi);
+    setIsKpiModalVisible(true);
+  }, []);
+
+  const handleCloseKpiModal = useCallback(() => {
+    setIsKpiModalVisible(false);
+    setSelectedKpi(null);
   }, []);
 
   // Auto-refresh alerts periodically
@@ -68,7 +81,10 @@ function App() {
       <main className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* KPI Dashboard */}
-          <Dashboard key={`dashboard-${refreshKey}`} />
+          <Dashboard 
+            key={`dashboard-${refreshKey}`} 
+            onKpiClick={handleKpiClick}
+          />
           
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -111,6 +127,13 @@ function App() {
         onClearAll={handleClearAllAlerts}
         isVisible={showAlerts}
         onClose={() => setShowAlerts(false)}
+      />
+      
+      {/* KPI Detail Modal */}
+      <KPIDetailModal
+        kpi={selectedKpi}
+        isVisible={isKpiModalVisible}
+        onClose={handleCloseKpiModal}
       />
     </div>
   );

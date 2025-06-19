@@ -55,6 +55,19 @@ export interface SimulationConfig {
   competitionImpact: number;
 }
 
+// New interfaces for KPI drill-down functionality
+export interface KPIHistoricalData {
+  date: string;
+  value: number;
+}
+
+export interface KPIInsight {
+  type: 'positive' | 'negative' | 'neutral';
+  title: string;
+  description: string;
+  recommendation?: string;
+}
+
 // Global simulation state
 let currentConfig: SimulationConfig = {
   baseRevenue: 2400000,
@@ -384,6 +397,158 @@ export const fetchKPIData = async (config?: Partial<SimulationConfig>): Promise<
   generateKPIAlerts(kpiData);
   
   return kpiData;
+};
+
+// New function to fetch historical KPI data
+export const fetchKPIHistoricalData = async (
+  kpiTitle: string, 
+  timeRange: '7d' | '30d' | '90d' | '1y'
+): Promise<KPIHistoricalData[]> => {
+  await delay(600);
+  
+  const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
+  const data: KPIHistoricalData[] = [];
+  
+  // Base values for different KPIs
+  const baseValues = {
+    'Monthly Revenue': currentConfig.baseRevenue,
+    'Operating Expenses': currentConfig.baseRevenue * 0.75,
+    'Net Profit Margin': 15,
+    'Cash Flow': currentConfig.baseRevenue * 0.2
+  };
+  
+  const baseValue = baseValues[kpiTitle as keyof typeof baseValues] || 1000000;
+  
+  for (let i = days; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    
+    // Generate realistic historical data with trends
+    const trendFactor = (days - i) / days * (currentConfig.growthRate / 100);
+    const volatilityFactor = (Math.random() - 0.5) * (currentConfig.marketVolatility / 100);
+    const seasonalFactor = Math.sin((date.getTime() / 86400000) * Math.PI / 30) * (currentConfig.seasonality / 100);
+    
+    let value = baseValue * (1 + trendFactor + volatilityFactor + seasonalFactor);
+    
+    // Ensure positive values and realistic ranges
+    if (kpiTitle === 'Net Profit Margin') {
+      value = Math.max(0, Math.min(50, value));
+    } else {
+      value = Math.max(value * 0.1, value);
+    }
+    
+    data.push({
+      date: timeRange === '1y' ? date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : 
+            timeRange === '90d' ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
+            date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+      value
+    });
+  }
+  
+  return data;
+};
+
+// New function to fetch KPI-specific insights
+export const fetchKPIInsights = async (kpiTitle: string): Promise<KPIInsight[]> => {
+  await delay(400);
+  
+  const insights: KPIInsight[] = [];
+  
+  switch (kpiTitle) {
+    case 'Monthly Revenue':
+      if (currentConfig.growthRate > 8) {
+        insights.push({
+          type: 'positive',
+          title: 'Strong Revenue Growth',
+          description: `Revenue is growing at ${currentConfig.growthRate}% annually, outpacing industry averages.`,
+          recommendation: 'Consider investing in capacity expansion to support continued growth.'
+        });
+      } else if (currentConfig.growthRate < 2) {
+        insights.push({
+          type: 'negative',
+          title: 'Slow Revenue Growth',
+          description: `Revenue growth at ${currentConfig.growthRate}% is below market expectations.`,
+          recommendation: 'Review marketing strategies and explore new revenue streams.'
+        });
+      }
+      
+      if (currentConfig.seasonality > 20) {
+        insights.push({
+          type: 'neutral',
+          title: 'High Seasonality Impact',
+          description: `Revenue shows ${currentConfig.seasonality}% seasonal variation.`,
+          recommendation: 'Develop strategies to smooth seasonal fluctuations.'
+        });
+      }
+      break;
+      
+    case 'Operating Expenses':
+      insights.push({
+        type: 'neutral',
+        title: 'Expense Optimization Opportunity',
+        description: 'Operating expenses represent 75% of revenue, which is within industry norms.',
+        recommendation: 'Monitor for efficiency improvements and cost reduction opportunities.'
+      });
+      
+      if (currentConfig.marketVolatility > 15) {
+        insights.push({
+          type: 'negative',
+          title: 'Expense Volatility Risk',
+          description: `High market volatility (${currentConfig.marketVolatility}%) may impact expense predictability.`,
+          recommendation: 'Implement flexible budgeting and cost control measures.'
+        });
+      }
+      break;
+      
+    case 'Net Profit Margin':
+      const estimatedMargin = (1 - 0.75) * 100; // Simplified calculation
+      if (estimatedMargin > 20) {
+        insights.push({
+          type: 'positive',
+          title: 'Healthy Profit Margins',
+          description: 'Profit margins are strong, indicating efficient operations.',
+          recommendation: 'Maintain operational efficiency while exploring growth opportunities.'
+        });
+      } else if (estimatedMargin < 10) {
+        insights.push({
+          type: 'negative',
+          title: 'Margin Pressure',
+          description: 'Profit margins are under pressure, requiring attention.',
+          recommendation: 'Focus on cost optimization and pricing strategy review.'
+        });
+      }
+      break;
+      
+    case 'Cash Flow':
+      insights.push({
+        type: 'positive',
+        title: 'Positive Cash Generation',
+        description: 'Strong cash flow supports business operations and growth investments.',
+        recommendation: 'Consider strategic investments or debt reduction opportunities.'
+      });
+      
+      if (currentConfig.competitionImpact > 12) {
+        insights.push({
+          type: 'negative',
+          title: 'Competitive Cash Flow Risk',
+          description: `High competitive pressure (${currentConfig.competitionImpact}%) may impact future cash flows.`,
+          recommendation: 'Strengthen competitive position and diversify revenue sources.'
+        });
+      }
+      break;
+  }
+  
+  // Ensure we always return at least 2 insights
+  if (insights.length < 2) {
+    insights.push({
+      type: 'neutral',
+      title: 'AI Analysis Active',
+      description: 'Continuous monitoring and analysis of this metric is providing valuable insights.',
+      recommendation: 'Regular review of this KPI will help identify trends and opportunities.'
+    });
+  }
+  
+  return insights.slice(0, 4); // Limit to 4 insights max
 };
 
 export const fetchCashFlowData = async (config?: Partial<SimulationConfig>): Promise<CashFlowData[]> => {
