@@ -72,13 +72,14 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
       <Header 
         alertCount={getAlertCount()}
         criticalAlertCount={getCriticalAlertCount()}
         onAlertsClick={handleToggleAlerts}
       />
-      <main className="p-6">
+      
+      <main className="p-4 sm:p-6 pb-20">
         <div className="max-w-7xl mx-auto">
           {/* KPI Dashboard */}
           <Dashboard 
@@ -87,8 +88,8 @@ function App() {
           />
           
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Cash Flow Chart - Spans 2 columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {/* Cash Flow Chart - Spans 2 columns on large screens */}
             <div className="lg:col-span-2">
               <CashFlowChart key={`cashflow-${refreshKey}`} />
             </div>
@@ -99,19 +100,19 @@ function App() {
             </div>
           </div>
           
-          {/* AI Insights and Analysis */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* AI Insights and Budget Tracker */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <AIInsights key={`insights-${refreshKey}`} />
             <BudgetTracker key={`budget-${refreshKey}`} />
           </div>
           
           {/* Scenario Analysis - Full Width */}
-          <div className="grid grid-cols-1 mb-8">
+          <div className="mb-6 sm:mb-8">
             <ScenarioAnalysis />
           </div>
           
           {/* Risk Assessment */}
-          <div className="grid grid-cols-1">
+          <div>
             <RiskAssessment key={`risk-${refreshKey}`} />
           </div>
         </div>
