@@ -11,6 +11,7 @@ import SimulationControls from './components/SimulationControls';
 import AlertsDisplay from './components/AlertsDisplay';
 import KPIDetailModal from './components/KPIDetailModal';
 import { getAlerts, clearAlert, clearAllAlerts, refreshAlerts, getAlertCount, getCriticalAlertCount, KPIData } from './utils/api';
+import { Zap } from 'lucide-react';
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -136,6 +137,20 @@ function App() {
         isVisible={isKpiModalVisible}
         onClose={handleCloseKpiModal}
       />
+      
+      {/* Made with Bolt Badge */}
+      <div className="fixed bottom-4 left-4 z-40">
+        <a
+          href="https://bolt.new"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:from-blue-700 hover:to-purple-700 group"
+          aria-label="Made with Bolt"
+        >
+          <Zap className="w-3 h-3 group-hover:animate-pulse" />
+          <span>Made with Bolt</span>
+        </a>
+      </div>
     </div>
   );
 }
