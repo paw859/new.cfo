@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import CashFlowChart from './components/CashFlowChart';
@@ -8,10 +8,13 @@ import RiskAssessment from './components/RiskAssessment';
 import QuickActions from './components/QuickActions';
 import ScenarioAnalysis from './components/ScenarioAnalysis';
 import SimulationControls from './components/SimulationControls';
-import AlertsDisplay from './components/AlertsDisplay';
-import KPIDetailModal from './components/KPIDetailModal';
+import LoadingSpinner from './components/LoadingSpinner';
 import { getAlerts, clearAlert, clearAllAlerts, refreshAlerts, getAlertCount, getCriticalAlertCount, KPIData } from './utils/api';
 import { Zap } from 'lucide-react';
+
+// Lazy load modal components
+const AlertsDisplay = React.lazy(() => import('./components/AlertsDisplay'));
+const KPIDetailModal = React.lazy(() => import('./components/KPIDetailModal'));
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -122,21 +125,41 @@ function App() {
       {/* Floating Simulation Controls */}
       <SimulationControls onConfigChange={handleConfigChange} />
       
-      {/* Alerts Display Modal */}
-      <AlertsDisplay
-        alerts={alerts}
-        onClearAlert={handleClearAlert}
-        onClearAll={handleClearAllAlerts}
-        isVisible={showAlerts}
-        onClose={() => setShowAlerts(false)}
-      />
+      {/* Lazy-loaded Alerts Display Modal */}
+      {showAlerts && (
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-8">
+              <LoadingSpinner size="lg" text="Loading alerts..." color="blue" />
+            </div>
+          </div>
+        }>
+          <AlertsDisplay
+            alerts={alerts}
+            onClearAlert={handleClearAlert}
+            onClearAll={handleClearAllAlerts}
+            isVisible={showAlerts}
+            onClose={() => setShowAlerts(false)}
+          />
+        </Suspense>
+      )}
       
-      {/* KPI Detail Modal */}
-      <KPIDetailModal
-        kpi={selectedKpi}
-        isVisible={isKpiModalVisible}
-        onClose={handleCloseKpiModal}
-      />
+      {/* Lazy-loaded KPI Detail Modal */}
+      {isKpiModalVisible && (
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-8">
+              <LoadingSpinner size="lg" text="Loading KPI details..." color="purple" />
+            </div>
+          </div>
+        }>
+          <KPIDetailModal
+            kpi={selectedKpi}
+            isVisible={isKpiModalVisible}
+            onClose={handleCloseKpiModal}
+          />
+        </Suspense>
+      )}
       
       {/* Made with Bolt Badge */}
       <div className="fixed bottom-4 left-4 z-40">

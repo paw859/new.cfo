@@ -154,4 +154,4 @@ const QuickActions = () => {
   );
 };
 
-export default QuickActions;
+export default React.memo(QuickActions);
