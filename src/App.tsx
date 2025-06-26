@@ -6,8 +6,6 @@ import AIInsights from './components/AIInsights';
 import BudgetTracker from './components/BudgetTracker';
 import RiskAssessment from './components/RiskAssessment';
 import QuickActions from './components/QuickActions';
-import ScenarioAnalysis from './components/ScenarioAnalysis';
-import SimulationControls from './components/SimulationControls';
 import LoadingSpinner from './components/LoadingSpinner';
 import { getAlerts, clearAlert, clearAllAlerts, refreshAlerts, getAlertCount, getCriticalAlertCount, KPIData } from './utils/api';
 import { Zap } from 'lucide-react';
@@ -15,6 +13,10 @@ import { Zap } from 'lucide-react';
 // Lazy load modal components
 const AlertsDisplay = React.lazy(() => import('./components/AlertsDisplay'));
 const KPIDetailModal = React.lazy(() => import('./components/KPIDetailModal'));
+
+// Lazy load heavy components that are not immediately visible
+const ScenarioAnalysis = React.lazy(() => import('./components/ScenarioAnalysis'));
+const SimulationControls = React.lazy(() => import('./components/SimulationControls'));
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -110,9 +112,24 @@ function App() {
             <BudgetTracker key={`budget-${refreshKey}`} />
           </div>
           
-          {/* Scenario Analysis - Full Width */}
+          {/* Lazy-loaded Scenario Analysis - Full Width */}
           <div className="mb-6 sm:mb-8">
-            <ScenarioAnalysis />
+            <Suspense fallback={
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="p-2 bg-green-100 rounded-lg animate-pulse">
+                    <div className="w-6 h-6 bg-green-300 rounded"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-5 bg-gray-200 rounded w-48 animate-pulse"></div>
+                    <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                  </div>
+                </div>
+                <LoadingSpinner className="h-32" text="Loading scenario analysis..." color="green" />
+              </div>
+            }>
+              <ScenarioAnalysis />
+            </Suspense>
           </div>
           
           {/* Risk Assessment */}
@@ -122,8 +139,16 @@ function App() {
         </div>
       </main>
       
-      {/* Floating Simulation Controls */}
-      <SimulationControls onConfigChange={handleConfigChange} />
+      {/* Lazy-loaded Floating Simulation Controls */}
+      <Suspense fallback={
+        <div className="fixed bottom-6 right-6 z-50">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg animate-pulse">
+            <div className="w-6 h-6 bg-white bg-opacity-30 rounded"></div>
+          </div>
+        </div>
+      }>
+        <SimulationControls onConfigChange={handleConfigChange} />
+      </Suspense>
       
       {/* Lazy-loaded Alerts Display Modal */}
       {showAlerts && (
